@@ -1,0 +1,23 @@
+{
+    "Buck": [
+        {
+            "net": "VIN",
+            "rule": "Use wide trace."
+        },
+        {
+            "net": "SW",
+            "rule": "Keep trace as short as possible."
+        },
+        {
+            "net": "FB",
+            "rule": "Avoid routing near SW."
+        }
+    ],
+
+    "Boost": [
+        {
+            "net": "VIN",
+            "rule": "Use short trace."
+        }
+    ]
+}

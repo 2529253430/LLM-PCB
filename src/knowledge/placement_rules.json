@@ -1,0 +1,23 @@
+{
+    "Buck": [
+        {
+            "component": "Input Capacitor",
+            "rule": "Place as close as possible to VIN pin."
+        },
+        {
+            "component": "Inductor",
+            "rule": "Place close to SW pin."
+        },
+        {
+            "component": "Feedback Resistor",
+            "rule": "Keep away from SW node."
+        }
+    ],
+
+    "Boost": [
+        {
+            "component": "Inductor",
+            "rule": "Place close to switch node."
+        }
+    ]
+}

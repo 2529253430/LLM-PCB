@@ -1,0 +1,2 @@
+part_number,manufacturer,category,topology,package,vin_min,vin_max,vout_min,vout_max,current,frequency,symbol,footprint,datasheet,description
+TPS54331,Texas Instruments,DC/DC,Buck,SOIC-8,3.5,28,0.8,24,3,570000,TPS54331.SchLib,SOIC8.PcbLib,TPS54331.pdf,3A Step Down Converter

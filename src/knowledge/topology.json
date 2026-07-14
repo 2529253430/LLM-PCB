@@ -1,0 +1,23 @@
+{
+    "Buck": {
+        "description": "Step-down DC/DC Converter",
+        "required_components": [
+            "Controller",
+            "Input Capacitor",
+            "Inductor",
+            "Output Capacitor",
+            "Feedback Resistor"
+        ]
+    },
+
+    "Boost": {
+        "description": "Step-up DC/DC Converter",
+        "required_components": [
+            "Controller",
+            "Inductor",
+            "Diode",
+            "Input Capacitor",
+            "Output Capacitor"
+        ]
+    }
+}
