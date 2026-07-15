@@ -144,6 +144,93 @@ class PCBBoard:
             + delta_y ** 2
         ) ** 0.5
 
+    def find_overlaps(
+        self,
+    ) -> list[tuple[str, str]]:
+        """
+        查找互相重叠的元件。
+        """
+
+        overlaps = []
+
+        component_list = list(
+            self.components.values()
+        )
+
+        for first_index in range(
+            len(component_list)
+        ):
+            first = component_list[
+                first_index
+            ]
+
+            for second_index in range(
+                first_index + 1,
+                len(component_list),
+            ):
+                second = component_list[
+                    second_index
+                ]
+
+                if self._components_overlap(
+                    first,
+                    second,
+                ):
+                    overlaps.append(
+                        (
+                            first.reference,
+                            second.reference,
+                        )
+                    )
+
+        return overlaps
+
+    @staticmethod
+    def _components_overlap(
+        first: PlacedComponent,
+        second: PlacedComponent,
+    ) -> bool:
+        """
+        判断两个矩形元件是否重叠。
+
+        当前版本暂不考虑旋转后的边界变化。
+        """
+
+        first_left = (
+            first.x - first.width / 2
+        )
+        first_right = (
+            first.x + first.width / 2
+        )
+        first_bottom = (
+            first.y - first.height / 2
+        )
+        first_top = (
+            first.y + first.height / 2
+        )
+
+        second_left = (
+            second.x - second.width / 2
+        )
+        second_right = (
+            second.x + second.width / 2
+        )
+        second_bottom = (
+            second.y - second.height / 2
+        )
+        second_top = (
+            second.y + second.height / 2
+        )
+
+        separated = (
+            first_right <= second_left
+            or second_right <= first_left
+            or first_top <= second_bottom
+            or second_top <= first_bottom
+        )
+
+        return not separated
+
     def to_dict(self) -> dict[str, Any]:
         """
         转换成可导出的 PCB 数据。

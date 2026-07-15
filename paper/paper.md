@@ -122,6 +122,26 @@ network separation from the switching region.
 
 ---
 
+### Placement Representation and Visualization
+
+The placement result is represented using an
+EDA-neutral JSON structure containing board dimensions,
+component coordinates, rotations, component dimensions,
+and rule-related attributes.
+
+A placement visualization module renders the board
+boundary and placed component bounding boxes. This
+visualization supports qualitative inspection of the
+topology-aware placement results and provides figures for
+experimental evaluation.
+
+The implementation also includes boundary validation and
+axis-aligned component-overlap detection. These checks
+ensure that the generated initial placement is
+geometrically valid before routing begins.
+
+![Topology-aware Buck placement](figures/buck_placement_v1.png)
+
 ## 4. Current Progress
 
 ✔ SQLite Component Database
