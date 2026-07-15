@@ -13,7 +13,6 @@
             "rule": "Avoid routing near SW."
         }
     ],
-
     "Boost": [
         {
             "net": "VIN",

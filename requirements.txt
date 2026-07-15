@@ -1,0 +1,7 @@
+pandas
+networkx
+numpy
+matplotlib
+openai
+streamlit
+python-dotenv

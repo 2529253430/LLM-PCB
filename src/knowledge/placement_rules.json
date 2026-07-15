@@ -13,7 +13,6 @@
             "rule": "Keep away from SW node."
         }
     ],
-
     "Boost": [
         {
             "component": "Inductor",
