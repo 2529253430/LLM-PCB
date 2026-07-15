@@ -83,6 +83,13 @@ Completed Sections
 - Manhattan-length-based detour selection
 - Secondary-obstacle candidate rejection
 - Initial integration with Manhattan routing
+- Controlled obstacle-routing benchmark
+- Naive versus obstacle-aware comparison
+- Collision-status evaluation
+- Routing-length evaluation
+- Segment-count evaluation
+- Benchmark JSON result export
+- Benchmark figure generation
 
 ### In Progress
 

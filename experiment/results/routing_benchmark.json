@@ -1,0 +1,15 @@
+{
+  "benchmark": "single_rectangular_obstacle",
+  "naive_manhattan": {
+    "total_length_mm": 60.0,
+    "segment_count": 1,
+    "point_count": 2,
+    "collision": true
+  },
+  "obstacle_aware": {
+    "total_length_mm": 86.0,
+    "segment_count": 3,
+    "point_count": 4,
+    "collision": false
+  }
+}

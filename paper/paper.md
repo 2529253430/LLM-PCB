@@ -244,6 +244,28 @@ subsequent A-star routing implementation.
 ✔ JSON Export
 
 ---
+## 4.1 Obstacle-Aware Routing Benchmark
+
+A controlled benchmark was constructed to evaluate the
+effectiveness of the obstacle-aware routing mechanism. A
+rectangular component obstacle was deliberately placed
+between the source and target terminals of a critical
+switching net.
+
+The naive Manhattan router generated the shortest direct
+connection but intersected the obstacle. In contrast, the
+obstacle-aware router detected the collision, generated
+upper and lower detour candidates, and selected the
+shortest collision-free path.
+
+The benchmark evaluates collision status, route length,
+segment count, and path-point count. This comparison
+demonstrates the trade-off between geometric feasibility
+and route length.
+
+![Naive Manhattan routing](figures/benchmark_naive_manhattan.png)
+
+![Obstacle-aware Manhattan routing](figures/benchmark_obstacle_aware.png)
 
 ## Next Step
 
