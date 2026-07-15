@@ -142,6 +142,48 @@ geometrically valid before routing begins.
 
 ![Topology-aware Buck placement](figures/buck_placement_v1.png)
 
+---
+
+## 3.7 Constraint-Aware Routing Planning
+
+The routing planner converts schematic connectivity,
+placement coordinates, and topology-specific routing
+constraints into a structured routing plan.
+
+Each net is assigned a routing priority, preferred trace
+width, preferred layer, routing strategy, and avoidance
+constraints. Critical switching and high-current power
+nets are assigned higher routing priority than sensitive
+feedback and ground connections.
+
+The planner selects an initial orthogonal-routing strategy
+according to the horizontal and vertical span of the net
+endpoints. The resulting routing plan is stored in an
+EDA-neutral JSON representation and serves as the input
+to the subsequent geometry-routing stage.
+
+## 3.8 Manhattan Geometry Routing
+
+The structured routing plan is converted into explicit
+geometry using a Manhattan routing engine. Each connection
+is represented as a sequence of axis-aligned route points
+and horizontal or vertical trace segments.
+
+For a two-terminal connection, the router selects either a
+horizontal-first or vertical-first strategy according to
+the routing plan. Multi-terminal nets are initially routed
+using a star topology in which the first endpoint is
+connected individually to the remaining endpoints.
+
+The implementation preserves the net-specific routing
+priority, preferred trace width, and preferred layer
+generated during constraint-aware routing planning. The
+result is serialized into an EDA-neutral routing JSON
+representation and rendered together with the component
+placement.
+
+![Initial Manhattan routing result](figures/buck_manhattan_routing_v1.png)
+
 ## 4. Current Progress
 
 ✔ SQLite Component Database

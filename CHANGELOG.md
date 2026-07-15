@@ -51,9 +51,16 @@ Completed Sections
 - Avoidance constraint assignment
 - Horizontal-first and vertical-first strategy selection
 - Routing plan JSON export
+- Manhattan geometry routing
+- Route point and route segment representation
+- Multi-terminal star routing
+- Routing result JSON export
+- Placement and routing visualization
+- Routing-length calculation
 
 ### In Progress
 
-- Manhattan geometry routing
-- Obstacle avoidance
-- Route visualization
+- Component obstacle avoidance
+- Route intersection detection
+- Feedback-net isolation
+- A* routing

@@ -1,5 +1,5 @@
 from pathlib import Path
-
+from src.pcb.route import RoutingResult
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 
@@ -141,3 +141,126 @@ class PCBPlacementVisualizer:
                 verticalalignment="center",
                 fontsize=8,
             )
+
+class PCBRoutingVisualizer:
+    """
+    绘制 PCB 元件与自动布线路径。
+    """
+
+    def save(
+        self,
+        board: PCBBoard,
+        routing_result: RoutingResult,
+        output_path: Path,
+        title: str = "LLM-PCB Automatic Routing",
+    ) -> Path:
+        output_path.parent.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+
+        figure, axis = plt.subplots(
+            figsize=(10, 8)
+        )
+
+        PCBPlacementVisualizer._draw_board(
+            axis=axis,
+            board=board,
+        )
+
+        PCBPlacementVisualizer._draw_components(
+            axis=axis,
+            board=board,
+        )
+
+        self._draw_routes(
+            axis=axis,
+            routing_result=routing_result,
+        )
+
+        axis.set_title(title)
+        axis.set_xlabel(
+            f"X Position ({board.unit})"
+        )
+        axis.set_ylabel(
+            f"Y Position ({board.unit})"
+        )
+
+        axis.set_xlim(
+            -5,
+            board.width + 5,
+        )
+        axis.set_ylim(
+            -5,
+            board.height + 5,
+        )
+
+        axis.set_aspect(
+            "equal",
+            adjustable="box",
+        )
+        axis.grid(True)
+
+        figure.tight_layout()
+
+        figure.savefig(
+            output_path,
+            dpi=200,
+            bbox_inches="tight",
+        )
+
+        plt.close(figure)
+
+        return output_path
+
+    @staticmethod
+    def _draw_routes(
+        axis,
+        routing_result: RoutingResult,
+    ) -> None:
+        """
+        绘制全部走线路径。
+        """
+
+        for routed_net in (
+            routing_result.routed_nets.values()
+        ):
+            for connection in (
+                routed_net.connections
+            ):
+                x_values = [
+                    point.x
+                    for point in connection.points
+                ]
+
+                y_values = [
+                    point.y
+                    for point in connection.points
+                ]
+
+                axis.plot(
+                    x_values,
+                    y_values,
+                    linewidth=max(
+                        routed_net.preferred_width,
+                        0.5,
+                    ),
+                )
+
+                if connection.points:
+                    middle_index = (
+                        len(connection.points) // 2
+                    )
+
+                    label_point = (
+                        connection.points[
+                            middle_index
+                        ]
+                    )
+
+                    axis.text(
+                        label_point.x,
+                        label_point.y,
+                        routed_net.net_name,
+                        fontsize=7,
+                    )
