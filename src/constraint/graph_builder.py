@@ -169,9 +169,9 @@ if __name__ == "__main__":
     builder = GraphBuilder()
 
     constraint_graph = builder.build(
-    vin=24
-    vout=5
-    current=3
+    vin=24,
+    vout=5,
+    current=3,
     priority="Efficiency",)
 
     constraint_graph.show()

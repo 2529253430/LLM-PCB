@@ -33,6 +33,29 @@ def select_components(topology, vin, vout, current):
         ascending=False
     )
 
+def select_component_records(
+    topology: str,
+    vin: float,
+    vout: float,
+    current: float,
+    limit: int = 3,
+) -> list[dict]:
+    """
+    返回适合写入约束图的候选器件列表。
+    """
+
+    result = select_components(
+        topology=topology,
+        vin=vin,
+        vout=vout,
+        current=current,
+    )
+
+    limited_result = result.head(limit)
+
+    return limited_result.to_dict(
+        orient="records"
+    )
 
 if __name__ == "__main__":
 
