@@ -1,23 +1,52 @@
 {
     "Buck": {
-        "description": "Step-down DC/DC Converter",
+        "description": "DC-DC Step Down Converter",
+        "application": [
+            "Power Supply",
+            "Embedded System",
+            "FPGA",
+            "MCU"
+        ],
+        "condition": {
+            "Vin": ">Vout"
+        },
         "required_components": [
             "Controller",
-            "Input Capacitor",
             "Inductor",
+            "Input Capacitor",
             "Output Capacitor",
             "Feedback Resistor"
+        ],
+        "advantages": [
+            "High Efficiency",
+            "Simple Structure"
+        ],
+        "disadvantages": [
+            "Cannot Step Up Voltage"
         ]
     },
 
     "Boost": {
-        "description": "Step-up DC/DC Converter",
+        "description": "DC-DC Step Up Converter",
+        "application": [
+            "LED Driver",
+            "Battery Powered Device"
+        ],
+        "condition": {
+            "Vin": "<Vout"
+        },
         "required_components": [
             "Controller",
             "Inductor",
             "Diode",
             "Input Capacitor",
             "Output Capacitor"
+        ],
+        "advantages": [
+            "Increase Voltage"
+        ],
+        "disadvantages": [
+            "Output Ripple Larger"
         ]
     }
 }

@@ -1,2 +1,7 @@
-part_number,manufacturer,category,topology,package,vin_min,vin_max,vout_min,vout_max,current,frequency,symbol,footprint,datasheet,description
-TPS54331,Texas Instruments,DC/DC,Buck,SOIC-8,3.5,28,0.8,24,3,570000,TPS54331.SchLib,SOIC8.PcbLib,TPS54331.pdf,3A Step Down Converter
+PartNumber,Category,Topology,VinMin,VinMax,VoutMin,VoutMax,Current,Efficiency,Package,Manufacturer
+LM2596,Controller,Buck,4.5,40,1.2,37,3,0.82,TO263,TI
+TPS5430,Controller,Buck,5.5,36,1.2,31,3,0.92,SOIC8,TI
+MP1584,Controller,Buck,4.5,28,0.8,20,3,0.95,SOIC8,MPS
+XL4015,Controller,Buck,8,36,1.25,32,5,0.94,TO263,XLSEMI
+MT3608,Controller,Boost,2,24,5,28,2,0.90,SOT23,MTC
+TPS61088,Controller,Boost,2.7,12,4.5,12,10,0.95,QFN20,TI
