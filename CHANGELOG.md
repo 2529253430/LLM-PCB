@@ -64,3 +64,23 @@ Completed Sections
 - Route intersection detection
 - Feedback-net isolation
 - A* routing
+
+## Milestone 3 - Obstacle-Aware Routing
+
+### Completed
+
+- Axis-aligned rectangle geometry
+- PCB component obstacle representation
+- Placement-to-obstacle conversion
+- Horizontal segment collision detection
+- Vertical segment collision detection
+- Trace-width-aware obstacle expansion
+- Clearance-aware obstacle generation
+- Source and target obstacle exclusion
+
+### In Progress
+
+- Candidate detour generation
+- Best detour selection
+- Obstacle-aware Manhattan routing
+- Route intersection detection

@@ -184,6 +184,25 @@ placement.
 
 ![Initial Manhattan routing result](figures/buck_manhattan_routing_v1.png)
 
+## 3.9 Geometry-Based Obstacle Detection
+
+PCB components are represented as axis-aligned rectangular
+obstacles derived from their placement coordinates and
+component dimensions.
+
+The obstacle-detection module evaluates horizontal and
+vertical routing segments against expanded component
+boundaries. The expansion incorporates both component
+clearance and half of the routing-trace width, allowing
+the collision model to approximate physical spacing
+requirements.
+
+Source and target components may be excluded from collision
+checking because the corresponding route is expected to
+terminate at their pads. The resulting collision-detection
+interface is reused by subsequent detour generation and
+search-based routing algorithms.
+
 ## 4. Current Progress
 
 ✔ SQLite Component Database

@@ -1,6 +1,9 @@
 from dataclasses import dataclass, field
 from typing import Any
-
+from src.pcb.obstacle import (
+    PCBObstacle,
+    Rectangle,
+)
 
 @dataclass
 class PlacedComponent:
@@ -40,6 +43,60 @@ class PCBBoard:
     """
     保存 PCB 尺寸与元件布局结果。
     """
+    def build_component_obstacles(
+        self,
+        clearance: float = 0.0,
+    ) -> list[PCBObstacle]:
+        """
+        把所有已放置元件转换为矩形障碍物。
+
+        clearance:
+            元件周围额外保留的安全距离。
+        """
+
+        if clearance < 0:
+            raise ValueError(
+                "Clearance cannot be negative."
+            )
+
+        obstacles = []
+
+        for component in self.components.values():
+            half_width = component.width / 2
+            half_height = component.height / 2
+
+            rectangle = Rectangle(
+                left=(
+                    component.x
+                    - half_width
+                    - clearance
+                ),
+                right=(
+                    component.x
+                    + half_width
+                    + clearance
+                ),
+                bottom=(
+                    component.y
+                    - half_height
+                    - clearance
+                ),
+                top=(
+                    component.y
+                    + half_height
+                    + clearance
+                ),
+            )
+
+            obstacles.append(
+                PCBObstacle(
+                    reference=component.reference,
+                    obstacle_type="Component",
+                    rectangle=rectangle,
+                )
+            )
+
+        return obstacles
 
     def __init__(
         self,
