@@ -203,6 +203,28 @@ terminate at their pads. The resulting collision-detection
 interface is reused by subsequent detour generation and
 search-based routing algorithms.
 
+## 3.10 Candidate Detour Generation
+
+When a direct Manhattan segment intersects a component
+obstacle, the routing engine generates alternative
+orthogonal detours around the obstacle.
+
+For a horizontal connection, two candidates are generated
+above and below the obstacle. For a vertical connection,
+left-side and right-side candidates are generated. The
+candidate coordinates account for the component obstacle
+boundary, routing clearance, and half of the trace width.
+
+Each candidate route is converted into axis-aligned
+segments and checked against all known component
+obstacles. Collision-free candidates are ranked according
+to total Manhattan length, and the shortest feasible
+candidate is selected.
+
+This method provides a lightweight obstacle-aware routing
+mechanism and serves as an interpretable baseline for the
+subsequent A-star routing implementation.
+
 ## 4. Current Progress
 
 ✔ SQLite Component Database

@@ -77,10 +77,16 @@ Completed Sections
 - Trace-width-aware obstacle expansion
 - Clearance-aware obstacle generation
 - Source and target obstacle exclusion
+- Horizontal upper/lower detour generation
+- Vertical left/right detour generation
+- Candidate collision validation
+- Manhattan-length-based detour selection
+- Secondary-obstacle candidate rejection
+- Initial integration with Manhattan routing
 
 ### In Progress
 
-- Candidate detour generation
-- Best detour selection
-- Obstacle-aware Manhattan routing
+- Multi-obstacle detour routing
+- Bent-path obstacle avoidance
 - Route intersection detection
+- A* routing

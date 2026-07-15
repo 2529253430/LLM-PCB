@@ -10,7 +10,9 @@ from src.pcb.routing_plan import (
     RoutingEndpoint,
     RoutingPlan,
 )
-
+from src.pcb.board import PCBBoard
+from src.pcb.detour_router import DetourRouter
+from src.pcb.obstacle_detector import ObstacleDetector
 
 class ManhattanRouter:
     """
@@ -23,14 +25,37 @@ class ManhattanRouter:
     - 使用元件中心作为布线端点；
     - 使用星形连接方式处理多端点网络。
     """
+    def __init__(
+        self,
+        obstacle_clearance: float = 1.0,
+        detour_clearance: float = 2.0,
+    ) -> None:
+        self.obstacle_clearance = (
+            obstacle_clearance
+        )
+        self.detector = ObstacleDetector()
+        self.detour_router = DetourRouter(
+            clearance=detour_clearance
+        )
 
     def route(
         self,
         routing_plan: RoutingPlan,
+        board: PCBBoard | None = None,
     ) -> RoutingResult:
         """
         对全部网络进行几何布线。
         """
+        obstacles = []
+
+        if board is not None:
+            obstacles = (
+                board.build_component_obstacles(
+                    clearance=(
+                        self.obstacle_clearance
+                    )
+                )
+            )
 
         routing_result = RoutingResult()
 
@@ -38,7 +63,8 @@ class ManhattanRouter:
             routing_plan.get_sorted_plans()
         ):
             routed_net = self._route_net(
-                net_plan
+                 net_plan=net_plan,
+                 obstacles=obstacles,
             )
 
             routing_result.add_routed_net(
@@ -47,9 +73,12 @@ class ManhattanRouter:
 
         return routing_result
 
+
+
     def _route_net(
         self,
         net_plan: NetRoutingPlan,
+         obstacles,
     ) -> RoutedNet:
         """
         布置一个网络。
@@ -83,6 +112,7 @@ class ManhattanRouter:
                     source=source_endpoint,
                     target=target_endpoint,
                     net_plan=net_plan,
+                    obstacles=obstacles,
                 )
             )
 
@@ -95,6 +125,7 @@ class ManhattanRouter:
         source: RoutingEndpoint,
         target: RoutingEndpoint,
         net_plan: NetRoutingPlan,
+        obstacles,
     ) -> RoutedConnection:
         """
         根据 Routing Plan 中的策略生成折线路径。
@@ -121,6 +152,85 @@ class ManhattanRouter:
             width=net_plan.preferred_width,
             layer=net_plan.preferred_layer,
         )
+
+        ignored_references = {
+            source.reference,
+            target.reference,
+        }
+
+        collision_obstacles = []
+
+        for segment in segments:
+            collision_obstacles.extend(
+                self.detector.find_collisions(
+                    segment=segment,
+                    obstacles=obstacles,
+                    ignored_references=(
+                        ignored_references
+                    ),
+                )
+            )
+
+        if collision_obstacles:
+            first_obstacle = (
+                collision_obstacles[0]
+            )
+
+            if (
+                source_point.x == target_point.x
+                or source_point.y
+                == target_point.y
+            ):
+                candidates = (
+                    self.detour_router
+                    .generate_candidates(
+                        source=source_point,
+                        target=target_point,
+                        obstacle=first_obstacle,
+                        width=(
+                            net_plan
+                            .preferred_width
+                        ),
+                        layer=(
+                            net_plan
+                            .preferred_layer
+                        ),
+                    )
+                )
+
+                points = (
+                    self.detour_router
+                    .select_best_candidate(
+                        candidates=candidates,
+                        obstacles=obstacles,
+                        width=(
+                            net_plan
+                            .preferred_width
+                        ),
+                        layer=(
+                            net_plan
+                            .preferred_layer
+                        ),
+                        ignored_references=(
+                            ignored_references
+                        ),
+                    )
+                )
+
+                segments = (
+                    self.detour_router
+                    .build_segments(
+                        points=points,
+                        width=(
+                            net_plan
+                            .preferred_width
+                        ),
+                        layer=(
+                            net_plan
+                            .preferred_layer
+                        ),
+                    )
+                )
 
         return RoutedConnection(
             source_reference=source.reference,

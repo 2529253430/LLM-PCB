@@ -1,5 +1,8 @@
 from pathlib import Path
 import sys
+from test_placement_pipeline import (
+    build_test_placement,
+)
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 TEST_DIR = Path(__file__).resolve().parent
@@ -24,8 +27,11 @@ def build_test_routing_result():
 
     router = ManhattanRouter()
 
+    board = build_test_placement()
+
     routing_result = router.route(
-        routing_plan=routing_plan
+    routing_plan=routing_plan,
+    board=board,
     )
 
     return routing_result
