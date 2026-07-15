@@ -1,0 +1,74 @@
+{
+  "metadata": {
+    "experiment": "LLM-PCB Router Evaluation",
+    "version": "1.0"
+  },
+  "results": [
+    {
+      "scenario": "Single Obstacle",
+      "router": "Naive Manhattan",
+      "success": true,
+      "collision_count": 1,
+      "total_length_mm": 60.0,
+      "segment_count": 1,
+      "bend_count": 0,
+      "runtime_ms": 0.025,
+      "error": ""
+    },
+    {
+      "scenario": "Single Obstacle",
+      "router": "Obstacle-Aware Manhattan",
+      "success": true,
+      "collision_count": 0,
+      "total_length_mm": 86.0,
+      "segment_count": 3,
+      "bend_count": 2,
+      "runtime_ms": 0.076,
+      "error": ""
+    },
+    {
+      "scenario": "Single Obstacle",
+      "router": "Grid A*",
+      "success": true,
+      "collision_count": 0,
+      "total_length_mm": 84.0,
+      "segment_count": 4,
+      "bend_count": 3,
+      "runtime_ms": 10.416,
+      "error": ""
+    },
+    {
+      "scenario": "Multiple Obstacles",
+      "router": "Naive Manhattan",
+      "success": true,
+      "collision_count": 2,
+      "total_length_mm": 80.0,
+      "segment_count": 1,
+      "bend_count": 0,
+      "runtime_ms": 0.013,
+      "error": ""
+    },
+    {
+      "scenario": "Multiple Obstacles",
+      "router": "Obstacle-Aware Manhattan",
+      "success": true,
+      "collision_count": 0,
+      "total_length_mm": 132.0,
+      "segment_count": 3,
+      "bend_count": 2,
+      "runtime_ms": 0.051,
+      "error": ""
+    },
+    {
+      "scenario": "Multiple Obstacles",
+      "router": "Grid A*",
+      "success": true,
+      "collision_count": 0,
+      "total_length_mm": 112.0,
+      "segment_count": 6,
+      "bend_count": 5,
+      "runtime_ms": 10.512,
+      "error": ""
+    }
+  ]
+}

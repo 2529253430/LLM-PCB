@@ -1,0 +1,69 @@
+{
+  "schema_version": "1.0",
+  "part_number": "TPS5430DDA",
+  "manufacturer": "Texas Instruments",
+  "category": "Buck Controller",
+  "topology": "Buck",
+  "symbol_name": "TPS5430",
+  "footprint_name": "SOIC-8-PowerPAD-DDA",
+  "package": "SOIC-8 PowerPAD",
+  "electrical_limits": {
+    "vin_min_v": 5.5,
+    "vin_max_v": 36.0,
+    "output_current_max_a": 3.0,
+    "switching_frequency_hz": 500000
+  },
+  "pins": [
+    {
+      "number": "1",
+      "name": "BOOT",
+      "electrical_type": "passive"
+    },
+    {
+      "number": "2",
+      "name": "NC",
+      "electrical_type": "no_connect"
+    },
+    {
+      "number": "3",
+      "name": "VSENSE",
+      "logical_role": "FB",
+      "electrical_type": "input"
+    },
+    {
+      "number": "4",
+      "name": "ENA",
+      "electrical_type": "input"
+    },
+    {
+      "number": "5",
+      "name": "GND",
+      "logical_role": "GND",
+      "electrical_type": "power_input"
+    },
+    {
+      "number": "6",
+      "name": "VIN",
+      "logical_role": "VIN",
+      "electrical_type": "power_input"
+    },
+    {
+      "number": "7",
+      "name": "PH",
+      "logical_role": "SW",
+      "electrical_type": "power_output"
+    },
+    {
+      "number": "8",
+      "name": "PH",
+      "logical_role": "SW",
+      "electrical_type": "power_output"
+    },
+    {
+      "number": "9",
+      "name": "POWERPAD",
+      "logical_role": "GND",
+      "electrical_type": "power_input"
+    }
+  ]
+}

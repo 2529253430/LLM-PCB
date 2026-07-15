@@ -1,0 +1,7 @@
+﻿scenario,router,success,collision_count,total_length_mm,segment_count,bend_count,runtime_ms,error
+Single Obstacle,Naive Manhattan,True,1,60.0,1,0,0.025,
+Single Obstacle,Obstacle-Aware Manhattan,True,0,86.0,3,2,0.076,
+Single Obstacle,Grid A*,True,0,84.0,4,3,10.416,
+Multiple Obstacles,Naive Manhattan,True,2,80.0,1,0,0.013,
+Multiple Obstacles,Obstacle-Aware Manhattan,True,0,132.0,3,2,0.051,
+Multiple Obstacles,Grid A*,True,0,112.0,6,5,10.512,

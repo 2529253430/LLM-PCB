@@ -97,3 +97,22 @@ Completed Sections
 - Bent-path obstacle avoidance
 - Route intersection detection
 - A* routing
+
+## Milestone 5 - EDA Export Preparation
+
+### Completed
+
+- Project goal locked
+- KiCad-compatible export path selected
+- Real component-library schema
+- Physical-pin and logical-role mapping
+- TPS5430 initial symbol definition
+- Component-library validation
+
+### In Progress
+
+- Footprint and pad model
+- Pin-level schematic regeneration
+- KiCad schematic export
+- KiCad PCB export
+- Altium Designer import validation
