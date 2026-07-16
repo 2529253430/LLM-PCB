@@ -1,0 +1,91 @@
+{
+  "schema_version": "1.0",
+
+  "footprint_name": "SOIC-8-PowerPAD-DDA",
+
+  "package": "SOIC-8",
+
+  "unit": "mm",
+
+  "body": {
+    "width": 3.9,
+    "length": 4.9
+  },
+
+  "pads": [
+
+    {
+      "number": "1",
+      "x": -2.7,
+      "y": 1.905,
+      "width": 0.6,
+      "height": 1.6
+    },
+
+    {
+      "number": "2",
+      "x": -2.7,
+      "y": 0.635,
+      "width": 0.6,
+      "height": 1.6
+    },
+
+    {
+      "number": "3",
+      "x": -2.7,
+      "y": -0.635,
+      "width": 0.6,
+      "height": 1.6
+    },
+
+    {
+      "number": "4",
+      "x": -2.7,
+      "y": -1.905,
+      "width": 0.6,
+      "height": 1.6
+    },
+
+    {
+      "number": "5",
+      "x": 2.7,
+      "y": -1.905,
+      "width": 0.6,
+      "height": 1.6
+    },
+
+    {
+      "number": "6",
+      "x": 2.7,
+      "y": -0.635,
+      "width": 0.6,
+      "height": 1.6
+    },
+
+    {
+      "number": "7",
+      "x": 2.7,
+      "y": 0.635,
+      "width": 0.6,
+      "height": 1.6
+    },
+
+    {
+      "number": "8",
+      "x": 2.7,
+      "y": 1.905,
+      "width": 0.6,
+      "height": 1.6
+    },
+
+    {
+      "number": "9",
+      "name": "PowerPAD",
+      "x": 0.0,
+      "y": 0.0,
+      "width": 2.4,
+      "height": 3.2
+    }
+
+  ]
+}
