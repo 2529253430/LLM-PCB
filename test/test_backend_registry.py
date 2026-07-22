@@ -49,9 +49,9 @@ def _design_and_layout():
 def _write_test_pcb(path: Path) -> None:
     path.write_text(
         "(kicad_pcb\n"
-        "  (version 20240108)\n"
-        "  (generator pcbnew)\n"
-        "  (general (thickness 1.6))\n"
+        " (version 20240108)\n"
+        " (generator pcbnew)\n"
+        " (general (thickness 1.6))\n"
         ")\n",
         encoding="utf-8",
     )
@@ -80,7 +80,6 @@ def test_kicad_backend_exports_complete_project(
     schematic, layout = _design_and_layout()
     pcb_source = tmp_path / "source.kicad_pcb"
     _write_test_pcb(pcb_source)
-
     request = ExportRequest.create(
         project_name="Backend Buck",
         output_root=tmp_path / "projects",
@@ -90,7 +89,6 @@ def test_kicad_backend_exports_complete_project(
         metadata={"topology": "buck"},
     )
     result = export_design("kicad", request)
-
     assert result.success is True
     assert result.output_directory is not None
     assert len(result.artifacts) == 5
@@ -115,12 +113,13 @@ def test_kicad_backend_reports_missing_inputs(
     assert "pcb_source_path" in result.errors[0]
 
 
-def test_altium_backend_is_safe_placeholder(
+def test_altium_backend_reports_missing_inputs(
     tmp_path: Path,
 ) -> None:
     request = ExportRequest.create("Buck", tmp_path)
     result = export_design("altium", request)
     assert result.success is False
     assert result.artifacts == []
-    assert "not implemented" in result.errors[0]
+    assert "schematic" in result.errors[0]
+    assert "layout" in result.errors[0]
     assert result.metadata["capabilities"]["native_format"] is False
