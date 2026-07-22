@@ -1,0 +1,168 @@
+{
+  "schema_version": "1.0",
+  "rule_set": {
+    "id": "buck_layout_rules_v1",
+    "name": "Buck Converter Layout Rules",
+    "topology": "buck",
+    "description": "Rules for placement and routing optimization of a basic buck converter.",
+    "units": {"distance": "mm", "width": "mm", "area": "mm2"}
+  },
+  "component_roles": {
+    "controller": ["U1"],
+    "input_capacitor": ["CIN"],
+    "inductor": ["L1"],
+    "output_capacitor": ["COUT"],
+    "feedback_upper_resistor": ["R1"],
+    "feedback_lower_resistor": ["R2"]
+  },
+  "net_roles": {
+    "input_power": ["VIN"],
+    "switching": ["SW"],
+    "output_power": ["VOUT"],
+    "feedback": ["FB"],
+    "ground": ["GND"]
+  },
+  "placement_rules": [
+    {
+      "id": "place_cin_near_u1_vin",
+      "enabled": true,
+      "priority": 100,
+      "subject": {"component_role": "input_capacitor", "anchor_pad_role": "positive"},
+      "target": {"component_role": "controller", "pad_role": "VIN"},
+      "constraint": {"type": "max_distance", "max_distance_mm": 3.0},
+      "reason": "Reduce the high-current input-loop area."
+    },
+    {
+      "id": "place_l1_near_u1_sw",
+      "enabled": true,
+      "priority": 95,
+      "subject": {"component_role": "inductor", "anchor_pad_role": "input"},
+      "target": {"component_role": "controller", "pad_role": "SW"},
+      "constraint": {"type": "max_distance", "max_distance_mm": 4.0},
+      "reason": "Keep the switching-node connection short."
+    },
+    {
+      "id": "place_cout_near_l1",
+      "enabled": true,
+      "priority": 90,
+      "subject": {"component_role": "output_capacitor", "anchor_pad_role": "positive"},
+      "target": {"component_role": "inductor", "pad_role": "output"},
+      "constraint": {"type": "max_distance", "max_distance_mm": 5.0},
+      "reason": "Reduce the output ripple-current loop."
+    },
+    {
+      "id": "place_feedback_divider_near_fb",
+      "enabled": true,
+      "priority": 85,
+      "subject": {"component_roles": ["feedback_upper_resistor", "feedback_lower_resistor"]},
+      "target": {"component_role": "controller", "pad_role": "FB"},
+      "constraint": {"type": "cluster", "max_cluster_radius_mm": 4.0},
+      "reason": "Keep the high-impedance feedback node short."
+    },
+    {
+      "id": "place_feedback_away_from_sw",
+      "enabled": true,
+      "priority": 100,
+      "subject": {"component_roles": ["feedback_upper_resistor", "feedback_lower_resistor"]},
+      "target": {"net_role": "switching"},
+      "constraint": {"type": "min_distance", "min_distance_mm": 4.0},
+      "reason": "Reduce noise coupling from the switching node."
+    },
+    {
+      "id": "align_power_stage",
+      "enabled": true,
+      "priority": 70,
+      "subject": {"ordered_component_roles": ["input_capacitor", "controller", "inductor", "output_capacitor"]},
+      "constraint": {"type": "ordered_chain", "preferred_axis": "horizontal", "max_perpendicular_offset_mm": 3.0},
+      "reason": "Create a compact and understandable power-flow path."
+    }
+  ],
+  "routing_rules": [
+    {
+      "id": "route_input_power_first",
+      "enabled": true,
+      "priority": 100,
+      "net_role": "input_power",
+      "constraints": {"route_order": 1, "preferred_width_mm": 1.0, "max_bends": 2, "prefer_shortest_path": true}
+    },
+    {
+      "id": "route_switching_node_short",
+      "enabled": true,
+      "priority": 100,
+      "net_role": "switching",
+      "constraints": {"route_order": 2, "preferred_width_mm": 1.0, "max_bends": 2, "prefer_shortest_path": true, "minimize_copper_area": true, "max_copper_area_mm2": 20.0}
+    },
+    {
+      "id": "route_output_power",
+      "enabled": true,
+      "priority": 95,
+      "net_role": "output_power",
+      "constraints": {"route_order": 3, "preferred_width_mm": 1.0, "max_bends": 3, "prefer_shortest_path": true}
+    },
+    {
+      "id": "route_ground",
+      "enabled": true,
+      "priority": 90,
+      "net_role": "ground",
+      "constraints": {"route_order": 4, "preferred_width_mm": 1.0, "prefer_ground_plane": true, "minimize_return_path": true}
+    },
+    {
+      "id": "route_feedback_last",
+      "enabled": true,
+      "priority": 90,
+      "net_role": "feedback",
+      "constraints": {"route_order": 5, "preferred_width_mm": 0.25, "max_bends": 4, "avoid_net_roles": ["switching"], "min_clearance_from_avoided_nets_mm": 1.5, "prefer_quiet_region": true}
+    }
+  ],
+  "loop_rules": [
+    {
+      "id": "minimize_input_hot_loop",
+      "enabled": true,
+      "priority": 100,
+      "members": ["CIN.positive", "U1.VIN", "U1.GND", "CIN.negative"],
+      "constraint": {"type": "minimize_loop_area", "target_area_mm2": 25.0}
+    },
+    {
+      "id": "minimize_switch_output_loop",
+      "enabled": true,
+      "priority": 95,
+      "members": ["U1.SW", "L1.input", "L1.output", "COUT.positive", "COUT.negative", "U1.GND"],
+      "constraint": {"type": "minimize_loop_area", "target_area_mm2": 50.0}
+    }
+  ],
+  "keepout_rules": [
+    {
+      "id": "feedback_switching_keepout",
+      "enabled": true,
+      "priority": 100,
+      "source_net_role": "switching",
+      "affected_net_roles": ["feedback"],
+      "clearance_mm": 1.5
+    }
+  ],
+  "copper_rules": [
+    {
+      "id": "ground_plane",
+      "enabled": true,
+      "priority": 80,
+      "net_role": "ground",
+      "layer": "B.Cu",
+      "type": "polygon",
+      "edge_clearance_mm": 0.5,
+      "thermal_relief": true
+    }
+  ],
+  "optimization": {
+    "objective_weights": {
+      "placement_rule_violation": 10.0,
+      "routing_rule_violation": 10.0,
+      "hot_loop_area": 8.0,
+      "feedback_noise_risk": 8.0,
+      "total_route_length": 3.0,
+      "route_bends": 2.0,
+      "component_overlap": 100.0,
+      "board_boundary_violation": 100.0
+    },
+    "hard_constraints": ["component_overlap", "board_boundary_violation"]
+  }
+}

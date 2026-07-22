@@ -28,3 +28,11 @@ venv/
 Thumbs.db
 # Generated output
 output/
+
+# DigiKey API response cache
+data/cache/digikey/
+
+# Local environment files and secrets
+.env
+.env.*
+!.env.example

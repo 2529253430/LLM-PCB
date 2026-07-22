@@ -4,7 +4,25 @@ from src.schematic.circuit_graph import CircuitGraph
 
 class SchematicGenerator:
     """
-    根据 Constraint Graph 生成原理图 Circuit Graph。
+    根据 Constraint Graph 生成 Buck 原理图 Circuit Graph。
+
+    当前版本使用 TPS5430 的真实物理引脚编号：
+
+    VIN  -> Pin 6
+    SW   -> Pin 7
+    FB   -> Pin 3
+    GND  -> Pin 5
+
+    说明：
+    TPS5430 的 SW 实际对应 Pin 7 和 Pin 8，
+    GND 实际对应 Pin 5 和 PowerPAD Pin 9。
+
+    当前第一版原理图使用主引脚：
+    SW 使用 Pin 7；
+    GND 使用 Pin 5。
+
+    后续导出 KiCad 和 PCB 时，再补充并联的
+    Pin 8 和 PowerPAD Pin 9。
     """
 
     def generate_buck(
@@ -26,8 +44,13 @@ class SchematicGenerator:
             controller=controller,
         )
 
-        self._add_passive_components(graph)
-        self._connect_buck_nets(graph)
+        self._add_passive_components(
+            graph=graph
+        )
+
+        self._connect_buck_nets(
+            graph=graph
+        )
 
         return graph
 
@@ -36,18 +59,27 @@ class SchematicGenerator:
         constraint_graph: ConstraintGraph,
     ) -> dict:
         """
-        从约束图中选择 rank=1 的控制器。
+        从 Constraint Graph 中选择 rank 最小的控制器。
+
+        rank=1 表示当前推荐顺序中的第一名。
         """
 
         candidates = []
 
-        for _, data in constraint_graph.graph.nodes(
-            data=True
+        for _, data in (
+            constraint_graph.graph.nodes(
+                data=True
+            )
         ):
-            if data.get("node_type") != "ComponentCandidate":
+            if (
+                data.get("node_type")
+                != "ComponentCandidate"
+            ):
                 continue
 
-            candidates.append(dict(data))
+            candidates.append(
+                dict(data)
+            )
 
         if not candidates:
             raise ValueError(
@@ -56,7 +88,10 @@ class SchematicGenerator:
             )
 
         candidates.sort(
-            key=lambda item: item.get("rank", 999)
+            key=lambda item: item.get(
+                "rank",
+                999,
+            )
         )
 
         return candidates[0]
@@ -67,41 +102,80 @@ class SchematicGenerator:
         controller: dict,
     ) -> None:
         """
-        添加控制器及其逻辑引脚。
+        添加 Buck 控制器和真实物理引脚。
 
-        当前先使用通用 Buck 引脚名称。
-        后续会由器件引脚数据库替代。
+        当前控制器统一按 TPS5430DDA 建模。
         """
+
+        selected_name = str(
+            controller.get(
+                "name",
+                "TPS5430DDA",
+            )
+        )
+
+        # 为了保证当前真实器件库和封装库能够匹配，
+        # 第一版固定使用 TPS5430DDA。
+        #
+        # 后续如果器件数据库中加入其他真实器件库，
+        # 可以改为直接使用 selected_name。
+        part_number = "TPS5430DDA"
 
         graph.add_component(
             reference="U1",
             component_type="Controller",
-            part_number=controller["name"],
+            part_number=part_number,
             manufacturer=controller.get(
                 "manufacturer",
-                "",
+                "Texas Instruments",
             ),
             package=controller.get(
                 "package",
-                "",
+                "SOIC-8 PowerPAD",
             ),
+            footprint_name=(
+                "SOIC-8-PowerPAD-DDA"
+            ),
+            selected_candidate=selected_name,
             efficiency=controller.get(
                 "efficiency",
                 0,
             ),
         )
 
-        graph.add_pin("U1", "VIN", "VIN")
-        graph.add_pin("U1", "SW", "SW")
-        graph.add_pin("U1", "FB", "FB")
-        graph.add_pin("U1", "GND", "GND")
+        # TPS5430 真实物理引脚编号
+        graph.add_pin(
+            reference="U1",
+            pin_number="6",
+            pin_name="VIN",
+        )
+
+        graph.add_pin(
+            reference="U1",
+            pin_number="7",
+            pin_name="SW",
+        )
+
+        graph.add_pin(
+            reference="U1",
+            pin_number="3",
+            pin_name="FB",
+        )
+
+        graph.add_pin(
+            reference="U1",
+            pin_number="5",
+            pin_name="GND",
+        )
 
     @staticmethod
     def _add_passive_components(
         graph: CircuitGraph,
     ) -> None:
         """
-        添加 Buck 外围元件。
+        添加 Buck 外围无源元件。
+
+        当前无源器件仍使用简化的两引脚模型。
         """
 
         graph.add_component(
@@ -109,40 +183,90 @@ class SchematicGenerator:
             component_type="Input Capacitor",
             value="22uF",
         )
-        graph.add_pin("CIN", "1", "POS")
-        graph.add_pin("CIN", "2", "NEG")
+
+        graph.add_pin(
+            reference="CIN",
+            pin_number="1",
+            pin_name="POS",
+        )
+
+        graph.add_pin(
+            reference="CIN",
+            pin_number="2",
+            pin_name="NEG",
+        )
 
         graph.add_component(
             reference="L1",
             component_type="Inductor",
             value="10uH",
         )
-        graph.add_pin("L1", "1", "IN")
-        graph.add_pin("L1", "2", "OUT")
+
+        graph.add_pin(
+            reference="L1",
+            pin_number="1",
+            pin_name="IN",
+        )
+
+        graph.add_pin(
+            reference="L1",
+            pin_number="2",
+            pin_name="OUT",
+        )
 
         graph.add_component(
             reference="COUT",
             component_type="Output Capacitor",
             value="100uF",
         )
-        graph.add_pin("COUT", "1", "POS")
-        graph.add_pin("COUT", "2", "NEG")
+
+        graph.add_pin(
+            reference="COUT",
+            pin_number="1",
+            pin_name="POS",
+        )
+
+        graph.add_pin(
+            reference="COUT",
+            pin_number="2",
+            pin_name="NEG",
+        )
 
         graph.add_component(
             reference="R1",
             component_type="Feedback Resistor",
             value="100k",
         )
-        graph.add_pin("R1", "1", "HIGH")
-        graph.add_pin("R1", "2", "LOW")
+
+        graph.add_pin(
+            reference="R1",
+            pin_number="1",
+            pin_name="HIGH",
+        )
+
+        graph.add_pin(
+            reference="R1",
+            pin_number="2",
+            pin_name="LOW",
+        )
 
         graph.add_component(
             reference="R2",
             component_type="Feedback Resistor",
             value="19.1k",
         )
-        graph.add_pin("R2", "1", "HIGH")
-        graph.add_pin("R2", "2", "LOW")
+
+        graph.add_pin(
+            reference="R2",
+            pin_number="1",
+            pin_name="HIGH",
+        )
+
+        graph.add_pin(
+            reference="R2",
+            pin_number="2",
+            pin_name="LOW",
+        )
 
     @staticmethod
     def _connect_buck_nets(
@@ -150,28 +274,102 @@ class SchematicGenerator:
     ) -> None:
         """
         建立标准 Buck 电路网络。
+
+        U1 使用 TPS5430 的真实物理引脚编号。
         """
 
-        # 输入网络
-        graph.connect_pin("U1", "VIN", "VIN")
-        graph.connect_pin("CIN", "1", "VIN")
+        # VIN 输入网络
+        graph.connect_pin(
+            reference="U1",
+            pin_number="6",
+            net_name="VIN",
+        )
 
-        # 开关网络
-        graph.connect_pin("U1", "SW", "SW")
-        graph.connect_pin("L1", "1", "SW")
+        graph.connect_pin(
+            reference="CIN",
+            pin_number="1",
+            net_name="VIN",
+        )
 
-        # 输出网络
-        graph.connect_pin("L1", "2", "VOUT")
-        graph.connect_pin("COUT", "1", "VOUT")
-        graph.connect_pin("R1", "1", "VOUT")
+        # SW 开关网络
+        graph.connect_pin(
+            reference="U1",
+            pin_number="7",
+            net_name="SW",
+        )
 
-        # 反馈网络
-        graph.connect_pin("U1", "FB", "FB")
-        graph.connect_pin("R1", "2", "FB")
-        graph.connect_pin("R2", "1", "FB")
+        graph.connect_pin(
+            reference="L1",
+            pin_number="1",
+            net_name="SW",
+        )
 
-        # 地网络
-        graph.connect_pin("U1", "GND", "GND")
-        graph.connect_pin("CIN", "2", "GND")
-        graph.connect_pin("COUT", "2", "GND")
-        graph.connect_pin("R2", "2", "GND")
+        # VOUT 输出网络
+        graph.connect_pin(
+            reference="L1",
+            pin_number="2",
+            net_name="VOUT",
+        )
+
+        graph.connect_pin(
+            reference="COUT",
+            pin_number="1",
+            net_name="VOUT",
+        )
+
+        graph.connect_pin(
+            reference="R1",
+            pin_number="1",
+            net_name="VOUT",
+        )
+
+        # FB 反馈网络
+        graph.connect_pin(
+            reference="U1",
+            pin_number="3",
+            net_name="FB",
+        )
+
+        graph.connect_pin(
+            reference="R1",
+            pin_number="2",
+            net_name="FB",
+        )
+
+        graph.connect_pin(
+            reference="R2",
+            pin_number="1",
+            net_name="FB",
+        )
+
+        # GND 地网络
+        graph.connect_pin(
+            reference="U1",
+            pin_number="5",
+            net_name="GND",
+        )
+
+        graph.connect_pin(
+            reference="CIN",
+            pin_number="2",
+            net_name="GND",
+        )
+
+        graph.connect_pin(
+            reference="COUT",
+            pin_number="2",
+            net_name="GND",
+        )
+
+        graph.connect_pin(
+            reference="R2",
+            pin_number="2",
+            net_name="GND",
+        )
+
+
+if __name__ == "__main__":
+    print(
+        "Run this module through "
+        "test/test_schematic_pipeline.py"
+    )

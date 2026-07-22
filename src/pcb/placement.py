@@ -56,18 +56,22 @@ class TopologyAwarePlacementEngine:
             ),
         )
 
+        selected_part = self._get_part_number(
+        circuit_graph,
+         "U1",
+       )
+
         board.place_component(
-            reference="U1",
-            component_type="Controller",
-            x=32.0,
-            y=center_y,
-            width=12.0,
-            height=10.0,
-            selected_part=self._get_part_number(
-                circuit_graph,
-                "U1",
-            ),
-        )
+        reference="U1",
+        component_type="Controller",
+        x=32.0,
+        y=center_y,
+        rotation=0.0,
+        width=12.0,
+        height=10.0,
+        part_number=selected_part,
+        footprint_name="SOIC-8-PowerPAD-DDA",
+     )
 
         board.place_component(
             reference="L1",

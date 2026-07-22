@@ -116,3 +116,10 @@ Completed Sections
 - KiCad schematic export
 - KiCad PCB export
 - Altium Designer import validation
+## Phase 12 - EDA Backend Abstraction
+
+- Added a technology-neutral `ExportRequest` and `ExportResult` API.
+- Added `BackendRegistry` for named EDA backend discovery and dispatch.
+- Added a fully functional `KiCadBackend` adapter over the existing project exporter.
+- Added a safe `AltiumBackend` capability placeholder that does not emit fake native files.
+- Added backend tests, example usage, and architecture documentation.
