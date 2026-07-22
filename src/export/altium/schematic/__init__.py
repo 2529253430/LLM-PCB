@@ -47,3 +47,20 @@ __all__ = [
     "SchWire",
     "normalize_rotation",
 ]
+from .compound_document import (
+    CompoundDocumentError,
+    CompoundDocumentReader,
+    CompoundDocumentWriter,
+)
+from .schdoc_inspector import AltiumSchDocInspector, InspectedRecord
+from .schdoc_writer import AltiumSchDocWriteError, AltiumSchDocWriter
+
+__all__ += [
+    "AltiumSchDocInspector",
+    "AltiumSchDocWriteError",
+    "AltiumSchDocWriter",
+    "CompoundDocumentError",
+    "CompoundDocumentReader",
+    "CompoundDocumentWriter",
+    "InspectedRecord",
+]
