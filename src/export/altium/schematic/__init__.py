@@ -1,3 +1,7 @@
+from .builder import (
+    AltiumSchematicBuildError,
+    AltiumSchematicBuilder,
+)
 from .component import (
     SchComponent,
     SchPin,
@@ -22,6 +26,8 @@ from .wire import SchJunction, SchWire
 from .writer import AltiumSchematicPreviewWriter
 
 __all__ = [
+    "AltiumSchematicBuildError",
+    "AltiumSchematicBuilder",
     "AltiumSchematicDocument",
     "AltiumSchematicModelError",
     "AltiumSchematicPreviewWriter",
