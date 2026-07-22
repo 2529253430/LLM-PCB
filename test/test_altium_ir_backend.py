@@ -37,6 +37,7 @@ def _design_layout_and_ir():
         manufacturer="Example Semiconductor",
     )
     layout = BuckSchematicLayoutEngine().layout(schematic)
+
     project_ir = SchematicDesignAdapter().build(
         schematic,
         layout,
@@ -47,7 +48,9 @@ def _design_layout_and_ir():
 
 
 def test_altium_builder_consumes_ir_directly() -> None:
-    schematic, layout, project_ir = _design_layout_and_ir()
+    schematic, layout, project_ir = (
+        _design_layout_and_ir()
+    )
 
     model = AltiumProjectBuilder().build_from_ir(
         project_ir,
@@ -76,11 +79,16 @@ def test_altium_backend_prefers_project_ir(
     result = export_design("altium", request)
 
     assert result.success is True
-    assert result.metadata["input_mode"] == (
-        "universal_project_ir"
+    assert (
+        result.metadata["input_mode"]
+        == "universal_project_ir"
     )
     assert result.metadata["ir_validation"]["valid"] is True
-    assert {artifact.role for artifact in result.artifacts} == {
+    assert {
+        artifact.role
+        for artifact in result.artifacts
+    } == {
+        "altium_project",
         "altium_model",
         "manifest",
     }
@@ -93,9 +101,14 @@ def test_altium_backend_prefers_project_ir(
     payload = json.loads(
         model_path.read_text(encoding="utf-8")
     )
-    assert payload["metadata"]["requested_by"] == "phase14d"
-    assert payload["metadata"]["source_ir_schema"] == (
-        "llm-pcb.universal-project-ir"
+
+    assert (
+        payload["metadata"]["requested_by"]
+        == "phase14d"
+    )
+    assert (
+        payload["metadata"]["source_ir_schema"]
+        == "llm-pcb.universal-project-ir"
     )
 
 
@@ -124,7 +137,6 @@ def test_altium_backend_reports_missing_ir_and_legacy_inputs(
         project_name="Buck",
         output_root=tmp_path,
     )
-
     result = export_design("altium", request)
 
     assert result.success is False
