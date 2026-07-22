@@ -3,12 +3,15 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, Mapping, Optional
+from typing import TYPE_CHECKING, Any, Dict, Mapping, Optional
 
 from src.schematic.layout import SchematicLayout
 from src.schematic.model import SchematicDesign
 
 from .export_result import ExportResult
+
+if TYPE_CHECKING:
+    from src.design_ir import UniversalProjectIR
 
 
 @dataclass(frozen=True)
@@ -35,10 +38,16 @@ class BackendCapabilities:
 
 @dataclass
 class ExportRequest:
-    """Technology-neutral input passed to an EDA backend."""
+    """Technology-neutral input passed to an EDA backend.
+
+    `project_ir` is the preferred input. The schematic and layout fields are
+    retained as a compatibility path while existing design engines migrate to
+    the universal IR.
+    """
 
     project_name: str
     output_root: Path
+    project_ir: Optional["UniversalProjectIR"] = None
     schematic: Optional[SchematicDesign] = None
     layout: Optional[SchematicLayout] = None
     pcb_source_path: Optional[Path] = None
@@ -51,6 +60,7 @@ class ExportRequest:
         cls,
         project_name: str,
         output_root: str | Path,
+        project_ir: Optional["UniversalProjectIR"] = None,
         schematic: Optional[SchematicDesign] = None,
         layout: Optional[SchematicLayout] = None,
         pcb_source_path: Optional[str | Path] = None,
@@ -61,6 +71,7 @@ class ExportRequest:
         return cls(
             project_name=project_name,
             output_root=Path(output_root),
+            project_ir=project_ir,
             schematic=schematic,
             layout=layout,
             pcb_source_path=(
