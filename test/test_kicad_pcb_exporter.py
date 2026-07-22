@@ -214,8 +214,7 @@ def test_kicad_pcb_exporter() -> Path:
         f"{expected_segment_count}"
     )
 
-    return exported_path
-
+    
 
 if __name__ == "__main__":
     test_kicad_pcb_exporter()
