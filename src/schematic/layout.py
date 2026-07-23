@@ -338,369 +338,207 @@ class SchematicLayout:
 
 
 class BuckSchematicLayoutEngine:
-    """
-    Generate a readable orthogonal schematic layout for a Buck converter.
+    """Generate a readable, topology-aware Buck schematic layout.
 
-    The engine is independent of KiCad and Altium file formats.
+    Phase 16E.2 uses explicit power-stage, feedback, bootstrap, and return
+    channels instead of routing every net through one global horizontal bus.
     """
 
     DEFAULT_GRID_MM = 2.54
-
     DEFAULT_POSITIONS: Mapping[str, Point] = {
         "J1": Point(25.4, 76.2),
-        "CIN": Point(50.8, 88.9),
-        "U1": Point(88.9, 76.2),
-        "CBOOT": Point(101.6, 48.26),
-        "L1": Point(127.0, 76.2),
-        "COUT": Point(152.4, 88.9),
-        "R1": Point(177.8, 76.2),
-        "R2": Point(177.8, 101.6),
-        "J2": Point(215.9, 76.2),
+        "CIN": Point(50.8, 71.12),
+        "U1": Point(86.36, 76.2),
+        "CBOOT": Point(111.76, 86.36),
+        "L1": Point(132.08, 76.2),
+        "COUT": Point(160.02, 71.12),
+        "R1": Point(187.96, 71.12),
+        "R2": Point(187.96, 55.88),
+        "J2": Point(220.98, 76.2),
     }
 
-    NET_TRUNK_Y: Mapping[str, float] = {
-        "BOOT": 43.18,
-        "VIN": 63.50,
-        "SW": 71.12,
-        "VOUT": 78.74,
-        "FB": 91.44,
-        "GND": 111.76,
-    }
+    POWER_PATH_Y = 76.2
+    FEEDBACK_Y = 63.5
+    GROUND_Y = 45.72
 
-    def __init__(
-        self,
-        grid_mm: float = DEFAULT_GRID_MM,
-    ) -> None:
+    def __init__(self, grid_mm: float = DEFAULT_GRID_MM) -> None:
         if grid_mm <= 0:
-            raise SchematicLayoutError(
-                "grid_mm must be greater than zero."
-            )
-
+            raise SchematicLayoutError("grid_mm must be greater than zero.")
         self.grid_mm = grid_mm
 
-    def layout(
-        self,
-        design: SchematicDesign,
-        symbol_positions: Optional[Mapping[str, Point]] = None,
-    ) -> SchematicLayout:
+    def layout(self, design: SchematicDesign,
+               symbol_positions: Optional[Mapping[str, Point]] = None) -> SchematicLayout:
         design.validate()
-
         positions = dict(self.DEFAULT_POSITIONS)
         if symbol_positions:
             positions.update(symbol_positions)
-
-        missing = [
-            component.reference
-            for component in design.components
-            if component.reference not in positions
-        ]
-
+        missing = [c.reference for c in design.components if c.reference not in positions]
         if missing:
-            raise SchematicLayoutError(
-                "Missing Buck schematic positions for: "
-                + ", ".join(sorted(missing))
-            )
+            raise SchematicLayoutError("Missing Buck schematic positions for: " + ", ".join(sorted(missing)))
 
         result = SchematicLayout(
             design_name=design.name,
             grid_mm=self.grid_mm,
             metadata={
                 "topology": "buck",
-                "layout_engine": (
-                    self.__class__.__name__
-                ),
+                "layout_engine": self.__class__.__name__,
+                "layout_strategy": "topology_aware_signal_flow",
+                "optimization_revision": "local_channels_v2",
+                "layout_phase": "16E",
             },
         )
-
         for component in design.components:
-            position = positions[
-                component.reference
-            ].snapped(self.grid_mm)
-
+            position = positions[component.reference].snapped(self.grid_mm)
             width, height = self._component_body_size(component)
-
-            result.add_symbol(
-                SymbolLayout(
-                    reference=component.reference,
-                    position=position,
-                    rotation_deg=0,
-                    body_width_mm=width,
-                    body_height_mm=height,
-                )
-            )
-
-            pin_offsets = self._pin_offsets(component)
-
+            result.add_symbol(SymbolLayout(component.reference, position, 0, width, height))
+            offsets = self._pin_offsets(component)
             for pin in component.pins:
-                offset = pin_offsets[pin.number]
+                off = offsets[pin.number]
+                result.add_pin(PinLayout(component.reference, pin.number,
+                                         Point(position.x + off.x, position.y + off.y).snapped(self.grid_mm)))
 
-                result.add_pin(
-                    PinLayout(
-                        component_reference=component.reference,
-                        pin_number=pin.number,
-                        endpoint=Point(
-                            position.x + offset.x,
-                            position.y + offset.y,
-                        ).snapped(self.grid_mm),
-                    )
-                )
-
-        for net_index, net in enumerate(design.nets):
-            self._route_net(
-                layout=result,
-                design=design,
-                net_name=net.name,
-                connections=net.connections,
-                net_index=net_index,
-            )
-
+        for net in design.nets:
+            self._route_named_net(result, net.name, net.connections)
         result.validate(design)
         return result
 
-    def _route_net(
-        self,
-        layout: SchematicLayout,
-        design: SchematicDesign,
-        net_name: str,
-        connections: Sequence[PinReference],
-        net_index: int,
-    ) -> None:
-        endpoints = [
-            layout.get_pin(
-                connection.component_reference,
-                connection.pin_number,
-            ).endpoint
-            for connection in connections
-        ]
-
-        if len(endpoints) < 2:
-            raise SchematicLayoutError(
-                f"Net {net_name} has too few endpoints."
+    def _route_named_net(self, layout: SchematicLayout, net_name: str,
+                         connections: Sequence[PinReference]) -> None:
+        endpoints: Dict[str, List[Point]] = {}
+        for connection in connections:
+            endpoints.setdefault(connection.component_reference, []).append(
+                layout.get_pin(connection.component_reference, connection.pin_number).endpoint
             )
-
-        trunk_y = self._net_trunk_y(
-            net_name,
-            endpoints,
-            net_index,
-        )
-
-        min_x = min(point.x for point in endpoints)
-        max_x = max(point.x for point in endpoints)
-
-        trunk_start = Point(
-            min_x - self.grid_mm,
-            trunk_y,
-        ).snapped(self.grid_mm)
-
-        trunk_end = Point(
-            max_x + self.grid_mm,
-            trunk_y,
-        ).snapped(self.grid_mm)
-
-        layout.add_wire(
-            WireSegment(
-                net_name=net_name,
-                start=trunk_start,
-                end=trunk_end,
-            )
-        )
-
-        branch_positions: Dict[Point, int] = {}
-
-        for endpoint in endpoints:
-            branch_point = Point(
-                endpoint.x,
-                trunk_y,
-            ).snapped(self.grid_mm)
-
-            if endpoint != branch_point:
-                layout.add_wire(
-                    WireSegment(
-                        net_name=net_name,
-                        start=endpoint,
-                        end=branch_point,
-                    )
-                )
-
-            branch_positions[branch_point] = (
-                branch_positions.get(branch_point, 0) + 1
-            )
-
-        for branch_point in branch_positions:
-            layout.add_junction(
-                Junction(
-                    net_name=net_name,
-                    position=branch_point,
-                )
-            )
-
-        layout.add_label(
-            NetLabelLayout(
-                net_name=net_name,
-                position=trunk_start,
-                rotation_deg=0,
-            )
-        )
-
-    def _net_trunk_y(
-        self,
-        net_name: str,
-        endpoints: Sequence[Point],
-        net_index: int,
-    ) -> float:
-        preferred = self.NET_TRUNK_Y.get(net_name.upper())
-
-        if preferred is not None:
-            return Point(
-                0.0,
-                preferred,
-            ).snapped(self.grid_mm).y
-
-        average_y = (
-            sum(point.y for point in endpoints)
-            / len(endpoints)
-        )
-
-        return Point(
-            0.0,
-            average_y + net_index * self.grid_mm,
-        ).snapped(self.grid_mm).y
-
-    def _pin_offsets(
-        self,
-        component: SchematicComponent,
-    ) -> Dict[str, Point]:
-        if component.reference.startswith(("C", "R")):
-            self._require_pin_count(component, 2)
-
-            return {
-                component.pins[0].number: Point(
-                    0.0,
-                    -5.08,
-                ),
-                component.pins[1].number: Point(
-                    0.0,
-                    5.08,
-                ),
-            }
-
-        if component.reference.startswith("L"):
-            self._require_pin_count(component, 2)
-
-            return {
-                component.pins[0].number: Point(
-                    -7.62,
-                    0.0,
-                ),
-                component.pins[1].number: Point(
-                    7.62,
-                    0.0,
-                ),
-            }
-
-        if component.reference.startswith("J"):
-            return self._connector_pin_offsets(component)
-
-        if component.reference.startswith("U"):
-            return self._regulator_pin_offsets(component)
-
-        raise SchematicLayoutError(
-            f"Unsupported component type: "
-            f"{component.reference}"
-        )
-
-    def _connector_pin_offsets(
-        self,
-        component: SchematicComponent,
-    ) -> Dict[str, Point]:
-        count = len(component.pins)
-
-        if count < 1:
-            raise SchematicLayoutError(
-                f"{component.reference} has no pins."
-            )
-
-        start_y = -(
-            (count - 1)
-            * self.grid_mm
-            / 2.0
-        )
-
-        return {
-            pin.number: Point(
-                5.08,
-                start_y + index * self.grid_mm,
-            ).snapped(self.grid_mm)
-            for index, pin in enumerate(component.pins)
-        }
-
-    def _regulator_pin_offsets(
-        self,
-        component: SchematicComponent,
-    ) -> Dict[str, Point]:
-        named = {
-            pin.name.strip().upper(): pin
-            for pin in component.pins
-        }
-
-        offsets: Dict[str, Point] = {}
-
-        desired = {
-            "VIN": Point(-10.16, -5.08),
-            "EN": Point(-10.16, 0.0),
-            "FB": Point(-10.16, 5.08),
-            "BOOT": Point(10.16, -5.08),
-            "SW": Point(10.16, 0.0),
-            "GND": Point(0.0, 10.16),
-        }
-
-        for pin_name, offset in desired.items():
-            pin = named.get(pin_name)
-
-            if pin is not None:
-                offsets[pin.number] = offset.snapped(
-                    self.grid_mm
-                )
-
-        unassigned = [
-            pin
-            for pin in component.pins
-            if pin.number not in offsets
-        ]
-
-        for index, pin in enumerate(unassigned):
-            offsets[pin.number] = Point(
-                -10.16,
-                10.16 + index * self.grid_mm,
-            ).snapped(self.grid_mm)
-
-        return offsets
+        name = net_name.upper()
+        if name == "VIN":
+            self._route_vin(layout, net_name, endpoints)
+        elif name == "SW":
+            self._route_sw(layout, net_name, endpoints)
+        elif name == "VOUT":
+            self._route_vout(layout, net_name, endpoints)
+        elif name == "FB":
+            self._route_fb(layout, net_name, endpoints)
+        elif name == "BOOT":
+            self._route_boot(layout, net_name, endpoints)
+        elif name == "GND":
+            self._route_gnd(layout, net_name, endpoints)
+        else:
+            self._route_tree(layout, net_name, [p for values in endpoints.values() for p in values])
 
     @staticmethod
-    def _component_body_size(
-        component: SchematicComponent,
-    ) -> Tuple[float, float]:
-        if component.reference.startswith("U"):
-            return 15.24, 15.24
+    def _first(endpoints: Mapping[str, List[Point]], reference: str) -> Optional[Point]:
+        points = endpoints.get(reference, [])
+        return points[0] if points else None
 
-        if component.reference.startswith("J"):
-            return 7.62, max(
-                7.62,
-                len(component.pins) * 2.54,
-            )
+    def _attach_to_lane(self, l: SchematicLayout, n: str, p: Point,
+                        lane_y: float, junction: bool = True) -> Point:
+        tap = Point(p.x, lane_y).snapped(self.grid_mm)
+        self._add_segment(l, n, p, tap)
+        if junction and p != tap:
+            l.add_junction(Junction(n, tap))
+        return tap
 
-        if component.reference.startswith("L"):
-            return 10.16, 5.08
+    def _route_vin(self, l, n, e):
+        j = self._first(e, "J1")
+        u_points = e.get("U1", [])
+        u = max(u_points, key=lambda p: p.y) if u_points else None
+        lane_y = Point(0, self.POWER_PATH_Y).snapped(self.grid_mm).y
+        taps = [self._attach_to_lane(l, n, p, lane_y) for p in [j, u] if p]
+        cin = self._first(e, "CIN")
+        if cin: taps.append(self._attach_to_lane(l, n, cin, lane_y))
+        if taps: self._add_segment(l, n, Point(min(p.x for p in taps), lane_y), Point(max(p.x for p in taps), lane_y))
+        # EN gets a short local tie to the VIN pin.
+        for p in u_points:
+            if p != u and u:
+                x = min(p.x, u.x) - 2 * self.grid_mm
+                self._add_segment(l, n, p, Point(x, p.y))
+                self._add_segment(l, n, Point(x, p.y), Point(x, u.y))
+                self._add_segment(l, n, Point(x, u.y), u)
+        self._label(l, n, Point(min(p.x for p in taps), lane_y), dy=self.grid_mm)
 
-        return 5.08, 5.08
+    def _route_sw(self, l, n, e):
+        u = self._first(e, "U1"); ind = self._first(e, "L1")
+        lane_y = Point(0, self.POWER_PATH_Y).snapped(self.grid_mm).y
+        taps=[self._attach_to_lane(l,n,p,lane_y) for p in (u,ind) if p]
+        if taps: self._add_segment(l,n,Point(min(p.x for p in taps),lane_y),Point(max(p.x for p in taps),lane_y))
+        boot = self._first(e,"CBOOT")
+        if boot:
+            tap=self._attach_to_lane(l,n,boot,lane_y); l.add_junction(Junction(n,tap))
+        self._label(l,n,u or ind,dy=self.grid_mm)
+
+    def _route_vout(self, l, n, e):
+        lane_y = Point(0, self.POWER_PATH_Y).snapped(self.grid_mm).y
+        refs=("L1","COUT","R1","J2")
+        taps=[]
+        for ref in refs:
+            p=self._first(e,ref)
+            if p: taps.append(self._attach_to_lane(l,n,p,lane_y))
+        if taps: self._add_segment(l,n,Point(min(p.x for p in taps),lane_y),Point(max(p.x for p in taps),lane_y))
+        self._label(l,n,Point(min(p.x for p in taps),lane_y),dy=self.grid_mm)
+
+    def _route_fb(self, l, n, e):
+        u=self._first(e,"U1"); r1=self._first(e,"R1"); r2=self._first(e,"R2")
+        divider_points=[p for p in (r1,r2) if p]
+        if not divider_points: return
+        node=Point(divider_points[0].x, self.FEEDBACK_Y).snapped(self.grid_mm)
+        for p in divider_points: self._add_segment(l,n,p,node)
+        if u:
+            self._add_segment(l,n,u,Point(node.x,u.y)); self._add_segment(l,n,Point(node.x,u.y),node)
+        l.add_junction(Junction(n,node)); self._label(l,n,u or node,dy=self.grid_mm)
+
+    def _route_boot(self, l, n, e):
+        u=self._first(e,"U1"); c=self._first(e,"CBOOT")
+        if u and c:
+            corner=Point(c.x,u.y); self._add_segment(l,n,u,corner); self._add_segment(l,n,corner,c)
+        self._label(l,n,u or c,dy=self.grid_mm)
+
+    def _route_gnd(self, l, n, e):
+        y=Point(0,self.GROUND_Y).snapped(self.grid_mm).y
+        points=[p for values in e.values() for p in values]
+        taps=[self._attach_to_lane(l,n,p,y) for p in points]
+        self._add_segment(l,n,Point(min(p.x for p in taps),y),Point(max(p.x for p in taps),y))
+        self._label(l,n,Point(min(p.x for p in taps),y),dy=self.grid_mm)
+
+    def _route_tree(self,l,n,endpoints):
+        ordered=sorted(endpoints,key=lambda p:(p.x,p.y)); anchor=ordered[0]
+        for p in ordered[1:]:
+            c=Point(p.x,anchor.y); self._add_segment(l,n,anchor,c); self._add_segment(l,n,c,p)
+        self._label(l,n,anchor,dy=self.grid_mm)
+
+    def _label(self,l,n,p,dy=0.0):
+        if p is not None: l.add_label(NetLabelLayout(n,Point(p.x,p.y+dy).snapped(self.grid_mm),0))
 
     @staticmethod
-    def _require_pin_count(
-        component: SchematicComponent,
-        expected: int,
-    ) -> None:
-        if len(component.pins) != expected:
-            raise SchematicLayoutError(
-                f"{component.reference} must have "
-                f"exactly {expected} pins."
-            )
+    def _add_segment(layout,net_name,start,end):
+        if start!=end: layout.add_wire(WireSegment(net_name,start,end))
+
+    def _pin_offsets(self, component: SchematicComponent) -> Dict[str, Point]:
+        ref=component.reference.upper()
+        if ref.startswith(("C","R")):
+            self._require_pin_count(component,2)
+            return {component.pins[0].number:Point(0,5.08), component.pins[1].number:Point(0,-5.08)}
+        if ref.startswith("L"):
+            self._require_pin_count(component,2)
+            return {component.pins[0].number:Point(-7.62,0), component.pins[1].number:Point(7.62,0)}
+        if ref.startswith("J"):
+            side=5.08 if ref=="J1" else -5.08
+            return {component.pins[0].number:Point(side,5.08), component.pins[1].number:Point(side,-5.08)}
+        if ref.startswith("U"):
+            named={p.name.strip().upper():p for p in component.pins}
+            desired={"VIN":Point(-10.16,0),"EN":Point(-10.16,-5.08),"SW":Point(10.16,0),"BOOT":Point(10.16,5.08),"FB":Point(10.16,-5.08),"GND":Point(0,-10.16)}
+            offsets={named[k].number:v for k,v in desired.items() if k in named}
+            for i,p in enumerate([p for p in component.pins if p.number not in offsets]): offsets[p.number]=Point(-10.16,-10.16-i*self.grid_mm)
+            return offsets
+        raise SchematicLayoutError(f"Unsupported component type: {component.reference}")
+
+    @staticmethod
+    def _component_body_size(component):
+        ref=component.reference.upper()
+        if ref.startswith("U"): return 15.24,20.32
+        if ref.startswith("J"): return 7.62,max(12.7,len(component.pins)*5.08)
+        if ref.startswith("L"): return 10.16,5.08
+        return 5.08,7.62
+
+    @staticmethod
+    def _require_pin_count(component,expected):
+        if len(component.pins)!=expected: raise SchematicLayoutError(f"{component.reference} must have exactly {expected} pins.")

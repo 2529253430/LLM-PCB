@@ -24,6 +24,14 @@ from .primitives import (
 from .sheet import SchSheet, SchSheetOrientation
 from .wire import SchJunction, SchWire
 from .writer import AltiumSchematicPreviewWriter
+from .symbols import (
+    AltiumSymbolMapper,
+    NativeSymbol,
+    NativeSymbolKind,
+    SymbolArc,
+    SymbolLine,
+    SymbolRectangle,
+)
 
 __all__ = [
     "AltiumSchematicBuildError",
@@ -46,6 +54,12 @@ __all__ = [
     "SchText",
     "SchWire",
     "normalize_rotation",
+    "AltiumSymbolMapper",
+    "NativeSymbol",
+    "NativeSymbolKind",
+    "SymbolArc",
+    "SymbolLine",
+    "SymbolRectangle",
 ]
 from .compound_document import (
     CompoundDocumentError,

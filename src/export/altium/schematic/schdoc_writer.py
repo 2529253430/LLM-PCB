@@ -6,6 +6,12 @@ from typing import Any
 from .compound_document import CompoundDocumentWriter
 from .document import AltiumSchematicDocument
 from .schdoc_records import HEADER_TEXT, SchDocRecord, encode_property_records, make_unique_id
+from .symbols import (
+    AltiumSymbolMapper,
+    SymbolArc,
+    SymbolLine,
+    SymbolRectangle,
+)
 
 
 class AltiumSchDocWriteError(ValueError):
@@ -15,9 +21,8 @@ class AltiumSchDocWriteError(ValueError):
 class AltiumSchDocWriter:
     """Serialize the Phase 16A object model as a native binary SchDoc.
 
-    Phase 16C intentionally emits generic rectangular symbols. Logical identity,
-    pins, wires, labels and junctions are native Altium records; detailed library
-    symbol artwork remains a later symbol-library mapping concern.
+    Phase 16D maps logical components to native Altium graphic primitives for
+    resistors, capacitors, inductors, diodes, connectors and ICs.
     """
 
     def write(self, document: AltiumSchematicDocument, output_path: str | Path) -> Path:
@@ -89,21 +94,16 @@ class AltiumSchDocWriter:
             }).payload())
             object_index += 1
 
-            half_w, half_h = 20, max(15, 5 * max(1, len(component.pins)))
-            records.append(SchDocRecord(14, {
-                "OwnerIndex": owner_index,
-                "IsNotAccesible": True,
-                "OwnerPartId": 1,
-                "Location.X": x - half_w,
-                "Location.Y": y - half_h,
-                "Corner.X": x + half_w,
-                "Corner.Y": y + half_h,
-                "LineWidth": 1,
-                "Color": 16711680,
-                "AreaColor": 11599871,
-                "IsSolid": False,
-                "UniqueID": make_unique_id(component.component_id + ":body"),
-            }).payload())
+            symbol = AltiumSymbolMapper().resolve(component)
+            half_w = round(symbol.body_half_width_mm / 0.254)
+            half_h = round(symbol.body_half_height_mm / 0.254)
+            for primitive_index, primitive in enumerate(symbol.primitives, start=1):
+                records.append(self._symbol_record(
+                    owner_index=owner_index,
+                    component=component,
+                    primitive=primitive,
+                    primitive_index=primitive_index,
+                ))
 
             for pin in component.pins:
                 px, py = self._xy(pin.location)
@@ -188,6 +188,60 @@ class AltiumSchDocWriter:
             }).payload())
             object_index += 1
         return records
+
+    def _symbol_record(self, *, owner_index, component, primitive, primitive_index) -> bytes:
+        origin_x, origin_y = self._xy(component.location)
+        unique_id = make_unique_id(
+            f"{component.component_id}:symbol:{primitive_index}"
+        )
+
+        def local_xy(point):
+            x, y = self._xy(point)
+            return origin_x + x, origin_y + y
+
+        common = {
+            "OwnerIndex": owner_index,
+            "IsNotAccesible": True,
+            "OwnerPartId": 1,
+            "LineWidth": primitive.width,
+            "Color": 16711680,
+            "UniqueID": unique_id,
+        }
+        if isinstance(primitive, SymbolLine):
+            x1, y1 = local_xy(primitive.start)
+            x2, y2 = local_xy(primitive.end)
+            return SchDocRecord(13, {
+                **common,
+                "Location.X": x1,
+                "Location.Y": y1,
+                "Corner.X": x2,
+                "Corner.Y": y2,
+            }).payload()
+        if isinstance(primitive, SymbolArc):
+            x, y = local_xy(primitive.center)
+            return SchDocRecord(12, {
+                **common,
+                "Location.X": x,
+                "Location.Y": y,
+                "Radius": max(1, round(primitive.radius_mm / 0.254)),
+                "StartAngle": primitive.start_angle_deg,
+                "EndAngle": primitive.end_angle_deg,
+            }).payload()
+        if isinstance(primitive, SymbolRectangle):
+            x1, y1 = local_xy(primitive.corner_a)
+            x2, y2 = local_xy(primitive.corner_b)
+            return SchDocRecord(14, {
+                **common,
+                "Location.X": min(x1, x2),
+                "Location.Y": min(y1, y2),
+                "Corner.X": max(x1, x2),
+                "Corner.Y": max(y1, y2),
+                "AreaColor": 11599871,
+                "IsSolid": primitive.filled,
+            }).payload()
+        raise AltiumSchDocWriteError(
+            f"Unsupported symbol primitive: {type(primitive).__name__}"
+        )
 
     @staticmethod
     def _xy(point) -> tuple[int, int]:
